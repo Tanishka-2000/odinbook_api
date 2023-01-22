@@ -2,8 +2,9 @@ const express = require('express');
 const path = require('path');
 const cors = require('cors');
 const mongoose = require('mongoose');
+require('dotenv').config();
 
-const CONNECTION_URL = 'mongodb+srv://user01:user01@cluster0.zmx5uqq.mongodb.net/myodinproject?retryWrites=true&w=majority'; 
+const CONNECTION_URL = process.env.MONGODB_URL; 
 mongoose.set('strictQuery', true);
 
 mongoose.connect(CONNECTION_URL,{ useNewUrlParser: true, useUnifiedTopology: true })
