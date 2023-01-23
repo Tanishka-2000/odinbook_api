@@ -7,8 +7,10 @@ router.get('/', (req, res) => {
 });
 
 router.get('/users', (req, res) => {
-  User.find({_id : {$ne : req.user._id}}, '_id name image', (err, users) => {
-    res.json(users);
+  User.findOne({_id: req.user._id}, 'friends', (err, user) => {
+    User.find({_id : {$nin : [req.user._id, ...user.friends]}}, '_id name image', (err, users) => {
+      res.json(users);
+    })
   })
 });
 
