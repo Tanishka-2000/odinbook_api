@@ -81,3 +81,20 @@ app.listen(PORT, () => console.log(`app listening on post ${PORT}`));
 // .exec((err, user) => {
 //   res.send(user);
 // })
+
+//push to array
+
+// PersonModel.update(
+//   { _id: person._id }, 
+//   { $addToSet: { friends: friend } }
+// );
+
+// person.friends.push(friend);
+// person.save(done);
+// or
+
+// PersonModel.update(
+//     { _id: person._id }, 
+//     { $push: { friends: friend } },
+//     done
+// );

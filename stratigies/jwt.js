@@ -5,9 +5,9 @@ const User = require('../models/user.js');
 
 module.exports = new JwtStrategy({
     jwtFromRequest : ExtractJwt.fromAuthHeaderAsBearerToken(),
-    secretOrKey : 'secret'
+    secretOrKey : process.env.JWT_SECRET
     },function(jwt_payload, done) {
-        User.findById(jwt_payload.sid, function(err, user) {
+        User.findById(jwt_payload.sid, '_id name image', function(err, user) {
             if (err) {
                 return done(err, false);
             }
