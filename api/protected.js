@@ -1,6 +1,6 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const router = express.Router();
+const bcrypt = require('bcrypt');
 const User = require('../models/user');
 const Post = require('../models/post');
 
@@ -47,17 +47,46 @@ router.get('/', (req, res) => {
 // ---------current user routes-------- //
 router.get('/friends', (req, res) => {
   User.findOne({_id: req.user._id}, 'friends')
-  .populate('friends', '_id name image')
+  .populate('friends', 'name image')
   .exec((err, user) => {
     res.json(user.friends);
   })
 });
 
+router.get('/about', (req, res) => {
+  User.findOne({_id: req.user._id}, 'name image profile posts')
+  .populate('posts')
+  .exec((err, user) => {
+    res.json(user);
+  });
+});
+
+router.get('/saved-posts', (req, res) => {
+  User.findOne({_id: req.user._id}, 'savedPosts')
+  .populate({
+    path:'savedPosts',
+    populate: {
+      path: 'author',
+      select: 'name image'
+    }
+  })
+  .exec((err, user) => {
+    res.json(user.savedPosts);
+  });
+});
+
+router.post('/saved-posts', (req, res) => {
+  User.updateOne({_id: req.user._id}, {$push: {savedPosts: req.body.postId}}, (err) => {
+    res.status(200).send();
+  });
+});
+
+
 // ---------user routes----------//
 
 router.get('/users', (req, res) => {
   User.findOne({_id: req.user._id}, 'friends', (err, user) => {
-    User.find({_id : {$nin : [req.user._id, ...user.friends]}}, '_id name image', (err, users) => {
+    User.find({_id : {$nin : [req.user._id, ...user.friends]}}, 'name image', (err, users) => {
       res.json(users);
     })
   })
