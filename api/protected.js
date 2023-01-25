@@ -98,4 +98,22 @@ router.post('/posts/:postId/like', async (req, res) => {
   }
 });
 
+router.post('/posts/:postId/comments', async(req, res) => {
+  const comment = {
+    author: req.user._id,
+    postedAt: Date.now(),
+    message: req.body.message
+  }
+  Post.updateOne({_id: req.params.postId}, {$push: {comments: comment}},{upsert: true}, (err, post) => {
+    res.status(200).send(post);
+  })
+  // const post = await Post.findOne({_id: req.params._id}, 'comments');
+  // console.log(post);
+  // res.json(true);
+  // post.comments.push(comment);
+  // post.save(err => {
+  //   res.json('posted')
+  // })
+});
+
 module.exports = router;
