@@ -81,6 +81,20 @@ router.post('/saved-posts', (req, res) => {
   });
 });
 
+router.post('/change-password', async (req, res) => {
+  const user = await User.findOne({_id: req.user._id}, 'credentials');
+  const result = await bcrypt.compareSync(req.body.old, user.credentials.passwordHash);
+
+  if(!result) return res.status(400).send();
+
+  bcrypt.hash(req.body.new, 10, (err, hash) => {
+
+    User.updateOne({_id: req.user._id}, {'credentials.passwordHash': hash}, (err) => {
+      res.status(200).send({oldHash: user.credentials.passwordHash, newHash: hash});
+    }); 
+
+  });
+});
 
 // ---------user routes----------//
 
