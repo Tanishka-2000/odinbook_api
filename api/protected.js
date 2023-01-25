@@ -44,6 +44,17 @@ router.get('/', (req, res) => {
   })
 });
 
+// ---------current user routes-------- //
+router.get('/friends', (req, res) => {
+  User.findOne({_id: req.user._id}, 'friends')
+  .populate('friends', '_id name image')
+  .exec((err, user) => {
+    res.json(user.friends);
+  })
+});
+
+// ---------user routes----------//
+
 router.get('/users', (req, res) => {
   User.findOne({_id: req.user._id}, 'friends', (err, user) => {
     User.find({_id : {$nin : [req.user._id, ...user.friends]}}, '_id name image', (err, users) => {
@@ -52,12 +63,20 @@ router.get('/users', (req, res) => {
   })
 });
 
-router.get('/friends', (req, res) => {
-  User.findOne({_id: req.user._id}, 'friends')
-  .populate('friends', '_id name image')
+router.get('/users/:userId', (req, res) => {
+  User.findOne({_id: req.params.userId}, 'name image profile posts')
+  .populate('posts')
+  .exec((err, user) => {
+    res.json(user);
+  });
+});
+
+router.get('/users/:userId/friends', (req, res) => {
+  User.findOne({_id: req.params.userId}, 'friends')
+  .populate('friends', 'name image')
   .exec((err, user) => {
     res.json(user.friends);
-  })
+  });
 });
 
 // ---------posts route --------------//
