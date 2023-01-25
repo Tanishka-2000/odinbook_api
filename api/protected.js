@@ -77,11 +77,25 @@ router.post('/posts', (req, res) => {
   });
 });
 
-// router.post('/posts/:postId/like', async (req, res) => {
-//   // check if user has already liked this post
-//   const user = await User.findById(req.user._id, 'friends').lean();
-//   console.log(typeof user.friends[0]);
-//   res.json(true);
-// });
+router.post('/posts/:postId/like', async (req, res) => {
+  
+  // check if user has already liked this post
+  const user = await User.findById(req.user._id, 'liked').lean();
+  const alreadyLiked = user.liked.some(post => post.equals(req.params.postId));
+  
+  if(alreadyLiked){
+    User.updateOne({_id: req.user._id}, {$pull: {liked : req.params.postId}}, (err) => {
+      Post.updateOne({_id: req.params.postId}, {$inc: {likes: -1}}, (err) => {
+        res.status(200).send();
+      })
+    })
+  }else{
+    User.updateOne({_id: req.user._id}, {$addToSet: {liked : req.params.postId}}, (err) => {
+      Post.updateOne({_id: req.params.postId}, {$inc: {likes: 1}}, (err) => {
+        res.status(200).send();
+      })
+   })
+  }
+});
 
 module.exports = router;
