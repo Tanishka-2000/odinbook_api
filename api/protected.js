@@ -60,7 +60,7 @@ router.get('/friends', (req, res) => {
   })
 });
 
-// posts route
+// ---------posts route --------------//
 
 router.post('/posts', (req, res) => {
   Post.create({
@@ -98,6 +98,24 @@ router.post('/posts/:postId/like', async (req, res) => {
   }
 });
 
+router.get('/posts/:postId/comments', (req, res) => {
+  Post.findOne({_id: req.params.postId}, 'comments')
+  .populate({
+    path: 'comments',
+    options: {
+      sort : {postedAt: -1}
+    },
+    limit: 5,
+    populate : {
+      path: 'author',
+      select: 'name image'
+    }
+  })
+  .exec((err, post) => {
+    res.json(post.comments);
+  })
+})
+
 router.post('/posts/:postId/comments', async(req, res) => {
   const comment = {
     author: req.user._id,
@@ -107,13 +125,6 @@ router.post('/posts/:postId/comments', async(req, res) => {
   Post.updateOne({_id: req.params.postId}, {$push: {comments: comment}},{upsert: true}, (err, post) => {
     res.status(200).send(post);
   })
-  // const post = await Post.findOne({_id: req.params._id}, 'comments');
-  // console.log(post);
-  // res.json(true);
-  // post.comments.push(comment);
-  // post.save(err => {
-  //   res.json('posted')
-  // })
 });
 
 module.exports = router;
