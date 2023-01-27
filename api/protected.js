@@ -223,7 +223,7 @@ router.get('/users/:userId/friends', (req, res) => {
   });
 });
 
-// need to test
+// sending a friend request
 router.post('/users/:userId/requests', (req, res) => {
   const sentRequest = {
     domain: 'sent',
@@ -251,13 +251,55 @@ router.post('/users/:userId/requests', (req, res) => {
   )
 });
 
-// to be implemented -----had find a way to get only specific request
-// router.post('/users/:userId/requests/requestId', (req, res) => {
-//   if(!['accepted', 'declined'].includes(req.body.answer)) return res.status(400).json('reply must be either accepted or declined');
-//   User.findOne({_id: req.user._id}, 'requests', (err, user) => {
+// replying to friend request //need to be tested // send friend requests first
+router.post('/requests/:requestId', (req, res) => {
+  if(!['accepted', 'declined'].includes(req.body.answer)) return res.status(400).json('reply must be either accepted or declined');
 
-//   })
-// })
+  User.findOne({_id: req.user._id}, {requests: {$elemMatch: {_id: req.params.requestId}}}, (err, user) => {
+    let request = user.requests[0];
+
+    // checking if the request was sent or recieved
+    if(request.domain === 'sent') return res.json('This request is ' + request.status)
+
+    if(req.body.answer === 'accepted'){
+
+      async.parallel({
+        user(callback){
+          User.updateOne({_id: req.user._id}, {$push: {friends: request.userId}, $pull: {requests: {_id: request._id}}},callback)
+        },
+        friend(callback){
+          User.updateOne({_id: request.userId}, {$push: {friends: req.user._id}},callback)
+        }
+      },
+      (err, result) => {
+        if(err) return res.status(500).json(err);
+        User.updateOne({_id: request.userId, "requests.userId": req.user._id}, {$set: {'requests.$.status': 'accepted'}}, (err, doc) => {
+          res.status(204);
+        })
+      });
+
+    }else{
+
+      async.parallel({
+        user(callback){
+          User.updateOne({_id: req.user._id}, {$pull: {requests: {_id: request._id}}},callback)
+        },
+        friend(callback){
+          User.updateOne({_id: request.userId, "requests.userId": req.user._id}, {$set: {'requests.$.status': 'declined'}}, callback)
+        }
+      },(err, result) => {
+        if(err) return res.status(500).json(err);
+        res.status(204).send();
+      })   
+    }
+  })
+});
+
+router.delete('/requests/:requestId', (req, res) => {
+  User.updateOne({_id: req.user._id}, {$pull: {requests: {_id: req.params.requestId}}},(err) => {
+    res.status(200).send();
+  })
+})
 
 // ---------posts route --------------//
 
