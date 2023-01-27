@@ -328,6 +328,15 @@ router.post('/users/:userId/unfriend', (req, res) => {
 
 // ---------posts route --------------//
 
+router.get('/posts/:postId', (req, res) => {
+  Post.findOne({_id: req.params.postId})
+  .select('message imageUrl tags author postedAt likes')
+  .populate('author', 'name image')
+  .exec((err, post) => {
+    res.json(post);
+  });
+});
+
 router.post('/posts', (req, res) => {
   Post.create({
     author: req.user._id,
@@ -399,8 +408,17 @@ router.post('/posts/:postId/comments', async(req, res) => {
     message: req.body.message
   }
   Post.updateOne({_id: req.params.postId}, {$push: {comments: comment}}, (err, post) => {
-    res.status(200).send(post);
-  })
+    // res.status(200).send(post);
+    const commented = {
+      domain: 'commented on post',
+      id: req.params.postId
+    }
+    Post.findOne({_id: req.params.postId}, 'author', (err, post) => {
+      User.updateOne({_id: post.author}, {$push: {notifications: commented}}, err => {
+        res.status(200).send();
+      });
+    });
+  });
 });
 
 module.exports = router;
