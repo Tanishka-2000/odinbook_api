@@ -3,6 +3,7 @@ const router = express.Router();
 const bcrypt = require('bcrypt');
 const User = require('../models/user');
 const Post = require('../models/post');
+const async = require('async');
 
 // index route
 router.get('/', (req, res) => {
@@ -45,6 +46,7 @@ router.get('/', (req, res) => {
 });
 
 // ---------current user routes-------- //
+
 router.get('/friends', (req, res) => {
   User.findOne({_id: req.user._id}, 'friends')
   .populate('friends', 'name image')
@@ -75,28 +77,127 @@ router.get('/saved-posts', (req, res) => {
   });
 });
 
-router.post('/saved-posts', (req, res) => {
+router.put('/saved-posts', (req, res) => {
   User.updateOne({_id: req.user._id}, {$push: {savedPosts: req.body.postId}}, (err) => {
     res.status(200).send();
   });
 });
 
-router.post('/change-password', async (req, res) => {
+router.put('/change-password', async (req, res) => {
   const user = await User.findOne({_id: req.user._id}, 'credentials');
   const result = await bcrypt.compareSync(req.body.old, user.credentials.passwordHash);
 
-  if(!result) return res.status(400).send();
+  if(!result) return res.status(400).json('Incorrect Password');
 
   bcrypt.hash(req.body.new, 10, (err, hash) => {
 
     User.updateOne({_id: req.user._id}, {'credentials.passwordHash': hash}, (err) => {
       res.status(200).send({oldHash: user.credentials.passwordHash, newHash: hash});
     }); 
-
   });
 });
 
-// ---------user routes----------//
+
+router.get('/requests', (req, res) => {
+  User.findOne({_id: req.user._id}, 'requests', (err, user) => {
+    res.json(user.requests);
+  })
+});
+
+// to be implemented // how to send notifications
+// router.get('/notifications', (req, res) => {
+//   User.findOne({_id: req.user._id}, 'notifications', (err, user) => {
+//     res.json(user.notifications);
+//   })
+// })
+
+// add current city
+router.put('/profile/currentCity', (req, res) => {
+  User.updateOne({_id: req.user._id}, {'profile.currentCity' : req.body.city}, err => {
+    res.status(200).send();
+  })
+});
+
+// delete current city
+router.delete('/profile/currentCity', (req, res) => {
+  User.updateOne({_id: req.user._id}, {$unset: {'profile.currentCity' : 1}}, err => {
+    res.status(200).send();
+  })
+});
+
+// add home town
+router.put('/profile/homeTown', (req, res) => {
+  User.updateOne({_id: req.user._id}, {'profile.homeTown' : req.body.town}, err => {
+    res.status(200).send();
+  })
+});
+
+// delete home town
+router.delete('/profile/homeTown', (req, res) => {
+  User.updateOne({_id: req.user._id}, {$unset: {'profile.homeTown' : 1}}, err => {
+    res.status(200).send();
+  })
+});
+
+// add gender
+router.put('/profile/gender', (req, res) => {
+  if(!['male', 'female', 'other'].includes(req.body.gender)) return res.status(400).json('gender must be in "male/female/other"');
+  User.updateOne({_id: req.user._id}, {'gender' : req.body.gender}, err => {
+    res.status(200).send();
+  })
+});
+
+// delete gender
+router.delete('/profile/gender', (req, res) => {
+  User.updateOne({_id: req.user._id}, {$unset: {gender: 1}}, err => {
+    res.status(200).send();
+  })
+});
+
+
+// add work experience
+router.put('/profile/work-experience', (req, res) => {
+  User.updateOne({_id: req.user._id}, {$push: {'profile.workExperience' : req.body.experience}}, err => {
+    res.status(200).send();
+  })
+});
+
+// delete work experience
+router.delete('/profile/work-experience', (req, res) => {
+  User.updateOne({_id: req.user._id}, {$pull: {'profile.workExperience' : req.body.experience}}, err => {
+    res.status(200).send();
+  })
+});
+
+// add high school
+router.put('/profile/high-school', (req, res) => {
+  User.updateOne({_id: req.user._id}, {$push: {'profile.highSchool' : req.body.school}}, err => {
+    res.status(200).send();
+  })
+});
+
+// delete high school
+router.delete('/profile/high-school', (req, res) => {
+  User.updateOne({_id: req.user._id}, {$pull: {'profile.highSchool' : req.body.school}}, err => {
+    res.status(200).send();
+  })
+});
+
+// add college
+router.put('/profile/college', (req, res) => {
+  User.updateOne({_id: req.user._id}, {$push: {'profile.college' : req.body.college}}, err => {
+    res.status(200).send();
+  })
+});
+
+// delete college
+router.delete('/profile/college', (req, res) => {
+  User.updateOne({_id: req.user._id}, {$pull: {'profile.college' : req.body.college}}, err => {
+    res.status(200).send();
+  })
+});
+
+// ---------users routes----------//
 
 router.get('/users', (req, res) => {
   User.findOne({_id: req.user._id}, 'friends', (err, user) => {
@@ -122,6 +223,42 @@ router.get('/users/:userId/friends', (req, res) => {
   });
 });
 
+// need to test
+router.post('/users/:userId/requests', (req, res) => {
+  const sentRequest = {
+    domain: 'sent',
+    userId: req.params.userId,
+    status:'pending',
+    date: Date.now()
+  }
+  const recievedRequest = {
+    domain: 'recieved',
+    userId: req.user._id,
+    date: Date.now()
+  }
+  async.parallel({
+    send(callback){
+      User.updateOne({_id: req.user._id}, {$push: {requests: sentRequest}}, callback)
+    },
+    recieved(callback){
+      User.updateOne({_id: req.params.userId}, {$push: {requests: recievedRequest}}, callback)
+    }
+  }, 
+  (err, result) => {
+      if(err) return res.status(500).json(err);
+      res.status(200).send();
+    }
+  )
+});
+
+// to be implemented -----had find a way to get only specific request
+// router.post('/users/:userId/requests/requestId', (req, res) => {
+//   if(!['accepted', 'declined'].includes(req.body.answer)) return res.status(400).json('reply must be either accepted or declined');
+//   User.findOne({_id: req.user._id}, 'requests', (err, user) => {
+
+//   })
+// })
+
 // ---------posts route --------------//
 
 router.post('/posts', (req, res) => {
@@ -139,7 +276,7 @@ router.post('/posts', (req, res) => {
   });
 });
 
-router.post('/posts/:postId/like', async (req, res) => {
+router.put('/posts/:postId/like', async (req, res) => {
   
   // check if user has already liked this post
   const user = await User.findById(req.user._id, 'liked').lean();

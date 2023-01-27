@@ -36,24 +36,6 @@ const protectedRouter = require('./api/protected.js');
 app.use('/api', userRouter);
 app.use('/protected', passport.authenticate('jwt', {session: false}) ,protectedRouter);
 
-// app.get('/', (req, res) => {
-//   res.send('Welcome to odinBook');
-// });
-
-// app.get('/get-data', (req,res) => {
-//   res.send([{id: 1, name:'jake'}, {id: 1, name:'kevin'}, {id: 3, name:'sarah'}])
-// });
-
-// app.get('/post-data', (req, res) => {
-//   res.send('data posted');
-// });
-
-// app.get('/update-data', (req, res) => {
-//   Post.findByIdAndUpdate('63c5262e5bd9dc944b5fc599', {priority: 10}, {}, (err, post) => {
-//     res.send('updated');
-//   });
-// });
-
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`app listening on post ${PORT}`));
 

@@ -70,7 +70,7 @@ body('password')
 
   const errors = validationResult(req);
   if(!errors.isEmpty()) return res.status(400).json({errors: errors.array()});
-  console.log(req.body.email);
+  // console.log(req.body.email);
   User.findOne({'credentials.email': req.body.email}, '_id credentials name image', (err, user) => {
     if(!user) return res.status(400).json('no such user exist');
     
@@ -83,11 +83,5 @@ body('password')
     });
   })
 });
-
-// router.get('/users', (req, res) => {
-//   User.find({}, 'credentials.email', (err, users) => {
-//     res.json(users);
-//   })
-// })
 
 module.exports = router;
