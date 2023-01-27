@@ -299,7 +299,32 @@ router.delete('/requests/:requestId', (req, res) => {
   User.updateOne({_id: req.user._id}, {$pull: {requests: {_id: req.params.requestId}}},(err) => {
     res.status(200).send();
   })
-})
+});
+
+router.post('/users/:userId/unfriend', (req, res) => {
+  User.findOne({_id: req.user._id}, 'friends', (err, user) => {
+
+    const isFriend = user.friends.some(friendId => friendId.equals(req.params.userId));
+    if(!isFriend) return res.status(400).json('not friend');
+
+    const notification = {
+      domain: 'unfriend',
+      id: req.user._id
+    };
+
+    async.parallel({
+      user(callback){
+        User.updateOne({_id: req.user._id}, {$pull: {friends: req.params.userId}}, callback)
+      },
+      friend(callback){
+        User.updateOne({_id: req.params.userId}, {$pull: {friends: req.user._id}, $push: {notifications: notification}}, callback)
+      }
+    },(err, result) => {
+      if(err) return res.status(500).send();
+      res.status(204).send();      
+    })
+  });
+}); 
 
 // ---------posts route --------------//
 
