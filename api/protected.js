@@ -104,12 +104,12 @@ router.get('/requests', (req, res) => {
   })
 });
 
-// to be implemented // how to send notifications
-// router.get('/notifications', (req, res) => {
-//   User.findOne({_id: req.user._id}, 'notifications', (err, user) => {
-//     res.json(user.notifications);
-//   })
-// })
+
+router.get('/notifications', (req, res) => {
+  User.findOne({_id: req.user._id}, 'notifications', (err, user) => {
+    res.json(user.notifications);
+  })
+})
 
 // add current city
 router.put('/profile/currentCity', (req, res) => {
@@ -338,7 +338,17 @@ router.post('/posts', (req, res) => {
     likes: 0
   }, (err, post) => {
     User.updateOne({_id: req.user._id}, {$push: {posts : post._id}}, (err) => {
-      res.status(200).send();
+      // res.status(200).send();
+      const postShared = {
+        domain: 'post shared',
+        id: post._id
+      }
+
+      User.findOne({_id: req.user._id}, 'friends', (err, user) => {
+        User.updateMany({_id: {$in: user.friends}}, {$push: {notifications: postShared}}, (err) => {
+          res.status(200).send();
+        })
+      })
     });
   });
 });
@@ -388,7 +398,7 @@ router.post('/posts/:postId/comments', async(req, res) => {
     postedAt: Date.now(),
     message: req.body.message
   }
-  Post.updateOne({_id: req.params.postId}, {$push: {comments: comment}},{upsert: true}, (err, post) => {
+  Post.updateOne({_id: req.params.postId}, {$push: {comments: comment}}, (err, post) => {
     res.status(200).send(post);
   })
 });
