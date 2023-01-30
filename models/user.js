@@ -5,7 +5,8 @@ const notificationSchema = ({
     type: String,
     enum: ['commented on post', 'post shared', 'unfriend']
   },
-  id: mongoose.ObjectId // Can be either postId or userId(domain:unfriend)
+  userId: {type: mongoose.ObjectId, ref: 'User'},
+  postId: {type: mongoose.ObjectId, ref: 'Post'} 
 });
 
 

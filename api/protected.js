@@ -131,8 +131,22 @@ router.get('/requests', (req, res) => {
 
 
 router.get('/notifications', (req, res) => {
-  User.findOne({_id: req.user._id}, 'notifications', (err, user) => {
+  User.findOne({_id: req.user._id}, 'notifications')
+  .populate({
+    path: 'notifications',
+    populate: {
+      path: 'userId',
+      select: 'name'
+    }
+  })
+  .exec((err, user) => {
     res.json(user.notifications);
+  })
+})
+
+router.delete('/notifications/:notificationId', (req, res) => {
+  User.updateOne({_id: req.user._id}, {$pull: {'notifications': {_id: req.params.notificationId}}}, (err) => {
+    res.status(200).send();
   })
 })
 
@@ -261,37 +275,34 @@ router.post('/users/:userId/friendRequest', (req, res) => {
   User.findOne({_id: req.user._id}, 'friends requests', (err, user) => {
     const isFriend = user.friends.some(friend => friend.equals(req.params.userId));
     const isRequestPending  = user.requests.some(request =>  request.userId.equals(req.params.userId))
-    // console.log(user.friends);
-    // console.log(req.params.userId);
-    // console.log(isFriend);
+ 
     if(isFriend) return res.status(400).json('Aready in friends list');
     if(isRequestPending) return res.status(400).json('Request already pending..');
-    return res.json('request ok');
 
-    // const sentRequest = {
-    //   domain: 'sent',
-    //   userId: req.params.userId,
-    //   status:'pending',
-    //   date: Date.now()
-    // }
-    // const recievedRequest = {
-    //   domain: 'recieved',
-    //   userId: req.user._id,
-    //   date: Date.now()
-    // }
-    // async.parallel({
-    //   send(callback){
-    //     User.updateOne({_id: req.user._id}, {$push: {requests: sentRequest}}, callback)
-    //   },
-    //   recieved(callback){
-    //     User.updateOne({_id: req.params.userId}, {$push: {requests: recievedRequest}}, callback)
-    //   }
-    // }, 
-    // (err, result) => {
-    //     if(err) return res.status(500).json(err);
-    //     res.status(200).send();
-    //   }
-    // )
+    const sentRequest = {
+      domain: 'sent',
+      userId: req.params.userId,
+      status:'pending',
+      date: Date.now()
+    }
+    const recievedRequest = {
+      domain: 'recieved',
+      userId: req.user._id,
+      date: Date.now()
+    }
+    async.parallel({
+      send(callback){
+        User.updateOne({_id: req.user._id}, {$push: {requests: sentRequest}}, callback)
+      },
+      recieved(callback){
+        User.updateOne({_id: req.params.userId}, {$push: {requests: recievedRequest}}, callback)
+      }
+    }, 
+    (err, result) => {
+        if(err) return res.status(500).json(err);
+        res.status(200).send();
+      }
+    )
   });
 });
 
@@ -301,6 +312,7 @@ router.post('/requests/:requestId', (req, res) => {
 
   User.findOne({_id: req.user._id}, {requests: {$elemMatch: {_id: req.params.requestId}}}, (err, user) => {
     let request = user.requests[0];
+    if(!request) return res.status(400).json('No such request exist');
 
     // checking if the request was sent or recieved
     if(request.domain === 'sent') return res.json('This request is ' + request.status)
@@ -340,8 +352,12 @@ router.post('/requests/:requestId', (req, res) => {
 });
 
 router.delete('/requests/:requestId', (req, res) => {
-  User.updateOne({_id: req.user._id}, {$pull: {requests: {_id: req.params.requestId}}},(err) => {
-    res.status(200).send();
+  User.findOne({_id: req.user._id}, {requests: {$elemMatch: {_id: req.params.requestId}}}, (err, user) => {
+    if(user.requests[0].status == 'pending') return res.status(400).json({msg: "couldn't delete pending request"})
+    // res.json('request could be deleted')
+    User.updateOne({_id: req.user._id}, {$pull: {requests: {_id: req.params.requestId}}},(err) => {
+      res.status(200).send();
+    })
   })
 });
 
@@ -353,7 +369,8 @@ router.post('/users/:userId/unfriend', (req, res) => {
 
     const notification = {
       domain: 'unfriend',
-      id: req.user._id
+      userId: req.user._id,
+      postId:null
     };
 
     async.parallel({
@@ -399,7 +416,8 @@ router.post('/posts', (req, res) => {
       // res.status(200).send();
       const postShared = {
         domain: 'post shared',
-        id: post._id
+        userId: req.user._id,
+        postId: post._id
       }
 
       User.findOne({_id: req.user._id}, 'friends', (err, user) => {
@@ -460,7 +478,8 @@ router.post('/posts/:postId/comments', async(req, res) => {
     // res.status(200).send(post);
     const commented = {
       domain: 'commented on post',
-      id: req.params.postId
+      userId: req.user._id,
+      postId: req.params.postId
     }
     Post.findOne({_id: req.params.postId}, 'author', (err, post) => {
       User.updateOne({_id: post.author}, {$push: {notifications: commented}}, err => {
