@@ -4,7 +4,7 @@ const bcrypt = require('bcrypt');
 const User = require('../models/user');
 const Post = require('../models/post');
 const async = require('async');
-const {body, validationResult} = require('express-validator');
+// const {body, validationResult} = require('express-validator');
 
 // index route
 router.get('/', (req, res) => {
@@ -225,8 +225,9 @@ router.delete('/profile/college', (req, res) => {
 // ---------users routes----------//
 
 router.get('/users', (req, res) => {
-  User.findOne({_id: req.user._id}, 'friends', (err, user) => {
-    User.find({_id : {$nin : [req.user._id, ...user.friends]}}, 'name image', (err, users) => {
+  User.findOne({_id: req.user._id}, 'friends requests', (err, user) => {
+    let requests = user.requests.map(request => request.userId)
+    User.find({_id : {$nin : [req.user._id, ...user.friends, ...requests]}}, 'name image', (err, users) => {
       res.json(users);
     })
   })
