@@ -80,6 +80,12 @@ router.get('/about', (req, res) => {
   });
 });
 
+router.get('/profile', (req, res) => {
+  User.findOne({_id: req.user._id}, 'profile', (err, user) => {
+    res.json(user.profile);
+  })
+})
+
 router.get('/saved-posts', (req, res) => {
   User.findOne({_id: req.user._id}, 'savedPosts')
   .populate({
@@ -93,6 +99,7 @@ router.get('/saved-posts', (req, res) => {
     res.json(user.savedPosts);
   });
 });
+
 
 router.put('/saved-posts', (req, res) => {
   User.updateOne({_id: req.user._id}, {$push: {savedPosts: req.body.postId}}, (err) => {
@@ -109,7 +116,7 @@ router.put('/change-password', async (req, res) => {
   bcrypt.hash(req.body.new, 10, (err, hash) => {
 
     User.updateOne({_id: req.user._id}, {'credentials.passwordHash': hash}, (err) => {
-      res.status(200).send({oldHash: user.credentials.passwordHash, newHash: hash});
+      res.status(200).send(); //{oldHash: user.credentials.passwordHash, newHash: hash}
     }); 
   });
 });
@@ -148,6 +155,14 @@ router.delete('/notifications/:notificationId', (req, res) => {
   User.updateOne({_id: req.user._id}, {$pull: {'notifications': {_id: req.params.notificationId}}}, (err) => {
     res.status(200).send();
   })
+})
+
+// add or change profile image
+router.put('/image', (req, res) => {
+  console.log(req.body.image);
+  User.updateOne({_id: req.user._id}, {image: req.body.image}, err => {
+    res.status(200).send();
+  });
 })
 
 // add current city

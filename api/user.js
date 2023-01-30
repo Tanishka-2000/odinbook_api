@@ -73,11 +73,11 @@ body('password')
   if(!errors.isEmpty()) return res.status(400).json(errors.array());
   // console.log(req.body.email);
   User.findOne({'credentials.email': req.body.email}, '_id credentials name image', (err, user) => {
-    if(!user) return res.status(400).json('no such user exist');
+    if(!user) return res.status(400).json([{email: 'no such email exist'}]);
     
     bcrypt.compare(req.body.password, user.credentials.passwordHash, (err, result) => {
       
-      if(!result) return res.status(400).json({msg: 'incorrect password'});
+      if(!result) return res.status(400).json([{password: 'incorrect password'}]);
 
       const token = jwt.sign({sid: user._id}, process.env.JWT_SECRET);
       res.json({token, name:user.name, image:user.image});
