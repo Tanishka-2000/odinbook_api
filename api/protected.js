@@ -4,13 +4,15 @@ const bcrypt = require('bcrypt');
 const User = require('../models/user');
 const Post = require('../models/post');
 const async = require('async');
+const {body, validationResult} = require('express-validator');
 
 // index route
 router.get('/', (req, res) => {
   let posts = [];
-  User.findOne({_id: req.user._id}, 'posts friends')
+  User.findOne({_id: req.user._id}, 'posts friends liked')
   .populate({
     path: 'posts',
+    select: 'message imageUrl tags author postedAt likes',
     options: {
       sort : {postedAt: -1}
     },
@@ -35,11 +37,16 @@ router.get('/', (req, res) => {
       }
     },
   })
+  .lean()
   .exec((err, user) => {
     posts = [...user.posts];
     user.friends.forEach(friend => {
       posts = [...posts, ...friend.posts];
     });
+    posts.forEach(post => {
+      if(user.liked.some(likedPost => likedPost.equals(post._id))) post.isLiked = true;
+      else post.isLiked = false;
+    })
     res.json(posts);
     // res.json(user)
   })
@@ -57,7 +64,17 @@ router.get('/friends', (req, res) => {
 
 router.get('/about', (req, res) => {
   User.findOne({_id: req.user._id}, 'name image profile posts')
-  .populate('posts')
+  .populate({
+    path: 'posts',
+    select: 'message imageUrl tags author postedAt likes',
+    options: {
+      sort : {postedAt: -1}
+    },
+    populate : {
+      path: 'author',
+      select: 'name image'
+    }
+  })
   .exec((err, user) => {
     res.json(user);
   });
@@ -99,7 +116,15 @@ router.put('/change-password', async (req, res) => {
 
 
 router.get('/requests', (req, res) => {
-  User.findOne({_id: req.user._id}, 'requests', (err, user) => {
+  User.findOne({_id: req.user._id}, 'requests')
+  .populate({
+    path: 'requests',
+    populate: {
+      path: 'userId',
+      select: 'name image'
+    }
+  })
+  .exec( (err, user) => {
     res.json(user.requests);
   })
 });
@@ -209,7 +234,13 @@ router.get('/users', (req, res) => {
 
 router.get('/users/:userId', (req, res) => {
   User.findOne({_id: req.params.userId}, 'name image profile posts')
-  .populate('posts')
+  .populate({
+    path:'posts',
+    populate: {
+      path: 'author',
+      select: 'name image'
+    }
+  })
   .exec((err, user) => {
     res.json(user);
   });
@@ -224,31 +255,43 @@ router.get('/users/:userId/friends', (req, res) => {
 });
 
 // sending a friend request
-router.post('/users/:userId/requests', (req, res) => {
-  const sentRequest = {
-    domain: 'sent',
-    userId: req.params.userId,
-    status:'pending',
-    date: Date.now()
-  }
-  const recievedRequest = {
-    domain: 'recieved',
-    userId: req.user._id,
-    date: Date.now()
-  }
-  async.parallel({
-    send(callback){
-      User.updateOne({_id: req.user._id}, {$push: {requests: sentRequest}}, callback)
-    },
-    recieved(callback){
-      User.updateOne({_id: req.params.userId}, {$push: {requests: recievedRequest}}, callback)
-    }
-  }, 
-  (err, result) => {
-      if(err) return res.status(500).json(err);
-      res.status(200).send();
-    }
-  )
+router.post('/users/:userId/friendRequest', (req, res) => {
+
+  User.findOne({_id: req.user._id}, 'friends requests', (err, user) => {
+    const isFriend = user.friends.some(friend => friend.equals(req.params.userId));
+    const isRequestPending  = user.requests.some(request =>  request.userId.equals(req.params.userId))
+    // console.log(user.friends);
+    // console.log(req.params.userId);
+    // console.log(isFriend);
+    if(isFriend) return res.status(400).json('Aready in friends list');
+    if(isRequestPending) return res.status(400).json('Request already pending..');
+    return res.json('request ok');
+
+    // const sentRequest = {
+    //   domain: 'sent',
+    //   userId: req.params.userId,
+    //   status:'pending',
+    //   date: Date.now()
+    // }
+    // const recievedRequest = {
+    //   domain: 'recieved',
+    //   userId: req.user._id,
+    //   date: Date.now()
+    // }
+    // async.parallel({
+    //   send(callback){
+    //     User.updateOne({_id: req.user._id}, {$push: {requests: sentRequest}}, callback)
+    //   },
+    //   recieved(callback){
+    //     User.updateOne({_id: req.params.userId}, {$push: {requests: recievedRequest}}, callback)
+    //   }
+    // }, 
+    // (err, result) => {
+    //     if(err) return res.status(500).json(err);
+    //     res.status(200).send();
+    //   }
+    // )
+  });
 });
 
 // replying to friend request //need to be tested // send friend requests first
@@ -338,11 +381,16 @@ router.get('/posts/:postId', (req, res) => {
 });
 
 router.post('/posts', (req, res) => {
+  // console.log(req.body);
+  // res.json('ok')
+  if(!req.body.message.trim() || !req.body.imageUrl) return res.status(400).json({msg: 'Incomplete data'});
+
+
   Post.create({
     author: req.user._id,
     message: req.body.message,
     imageUrl: req.body.imageUrl,
-    tags: req.body.tags.split(' '),
+    tags: req.body.tags ? req.body.tags.split(' ') : '',
     postedAt: Date.now(),
     likes: 0
   }, (err, post) => {
@@ -356,7 +404,7 @@ router.post('/posts', (req, res) => {
       User.findOne({_id: req.user._id}, 'friends', (err, user) => {
         User.updateMany({_id: {$in: user.friends}}, {$push: {notifications: postShared}}, (err) => {
           res.status(200).send();
-        })
+        });
       })
     });
   });

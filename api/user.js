@@ -26,11 +26,12 @@ body('password')
 .withMessage('must be at least 5 characters long'),
 
 (req, res) => {
+  // console.log(req.body);
   // Finds the validation errors in this request and wraps them in an object with handy functions
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     // console.log(req.body);
-    return res.status(400).json({ errors: errors.array() });
+    return res.status(400).json(errors.array() );
   }
 
   // generating hash from password
@@ -67,9 +68,9 @@ body('password')
 .withMessage('must be at least 5 characters long'),
 
 (req, res) => {
-
+  // console.log(req.body);
   const errors = validationResult(req);
-  if(!errors.isEmpty()) return res.status(400).json({errors: errors.array()});
+  if(!errors.isEmpty()) return res.status(400).json(errors.array());
   // console.log(req.body.email);
   User.findOne({'credentials.email': req.body.email}, '_id credentials name image', (err, user) => {
     if(!user) return res.status(400).json('no such user exist');

@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const notificationSchema = ({
   domain: {
     type: String,
-    enum: ['post liked', 'commented on post', 'post shared', 'unfriend']
+    enum: ['commented on post', 'post shared', 'unfriend']
   },
   id: mongoose.ObjectId // Can be either postId or userId(domain:unfriend)
 });
@@ -14,7 +14,7 @@ const requestSchema = ({
     type: String,
     enum: ['recieved, sent']
   },
-  userId: mongoose.ObjectId, // for received request
+  userId: {type: mongoose.ObjectId, ref: 'User'}, // for received request
   status: {
     type: String,
     enum: ['pending', 'accepted', 'declined']
