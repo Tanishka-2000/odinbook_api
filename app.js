@@ -3,6 +3,8 @@ const path = require('path');
 const cors = require('cors');
 const mongoose = require('mongoose');
 require('dotenv').config();
+const compression = require('compression');
+const helmet = require('helmet');
 
 const CONNECTION_URL = process.env.MONGODB_URL; 
 mongoose.set('strictQuery', true);
@@ -13,6 +15,10 @@ mongoose.connect(CONNECTION_URL,{ useNewUrlParser: true, useUnifiedTopology: tru
 
 
 const app = express();
+
+// making production ready
+app.use(compression());
+app.use(helmet());
 
 // configuring passport with jwt strategy
 const passport = require('passport');
