@@ -15,7 +15,7 @@ const requestSchema = ({
     type: String,
     enum: ['recieved, sent']
   },
-  userId: {type: mongoose.ObjectId, ref: 'User'}, // for received request
+  userId: {type: mongoose.ObjectId, ref: 'User'},
   status: {
     type: String,
     enum: ['pending', 'accepted', 'declined']
@@ -27,6 +27,7 @@ const userSchema = new mongoose.Schema({
   credentials: {
     email: String,
     passwordHash: String,
+    facebookId: String
   },
   name: String,
   image: String,

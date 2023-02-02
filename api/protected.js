@@ -102,7 +102,7 @@ router.get('/saved-posts', (req, res) => {
 
 
 router.put('/saved-posts', (req, res) => {
-  User.updateOne({_id: req.user._id}, {$push: {savedPosts: req.body.postId}}, (err) => {
+  User.updateOne({_id: req.user._id}, {$addToSet: {savedPosts: req.body.postId}}, (err) => {
     res.status(200).send();
   });
 });
@@ -159,7 +159,6 @@ router.delete('/notifications/:notificationId', (req, res) => {
 
 // add or change profile image
 router.put('/image', (req, res) => {
-  console.log(req.body.image);
   User.updateOne({_id: req.user._id}, {image: req.body.image}, err => {
     res.status(200).send();
   });
@@ -173,11 +172,11 @@ router.put('/profile/currentCity', (req, res) => {
 });
 
 // delete current city
-router.delete('/profile/currentCity', (req, res) => {
-  User.updateOne({_id: req.user._id}, {$unset: {'profile.currentCity' : 1}}, err => {
-    res.status(200).send();
-  })
-});
+// router.delete('/profile/currentCity', (req, res) => {
+//   User.updateOne({_id: req.user._id}, {$unset: {'profile.currentCity' : 1}}, err => {
+//     res.status(200).send();
+//   })
+// });
 
 // add home town
 router.put('/profile/homeTown', (req, res) => {
@@ -187,11 +186,11 @@ router.put('/profile/homeTown', (req, res) => {
 });
 
 // delete home town
-router.delete('/profile/homeTown', (req, res) => {
-  User.updateOne({_id: req.user._id}, {$unset: {'profile.homeTown' : 1}}, err => {
-    res.status(200).send();
-  })
-});
+// router.delete('/profile/homeTown', (req, res) => {
+//   User.updateOne({_id: req.user._id}, {$unset: {'profile.homeTown' : 1}}, err => {
+//     res.status(200).send();
+//   })
+// });
 
 // add gender
 router.put('/profile/gender', (req, res) => {
@@ -202,11 +201,11 @@ router.put('/profile/gender', (req, res) => {
 });
 
 // delete gender
-router.delete('/profile/gender', (req, res) => {
-  User.updateOne({_id: req.user._id}, {$unset: {gender: 1}}, err => {
-    res.status(200).send();
-  })
-});
+// router.delete('/profile/gender', (req, res) => {
+//   User.updateOne({_id: req.user._id}, {$unset: {gender: 1}}, err => {
+//     res.status(200).send();
+//   })
+// });
 
 
 // add work experience
@@ -247,6 +246,44 @@ router.put('/profile/college', (req, res) => {
 // delete college
 router.delete('/profile/college', (req, res) => {
   User.updateOne({_id: req.user._id}, {$pull: {'profile.college' : req.body.college}}, err => {
+    res.status(200).send();
+  })
+});
+
+
+// test both phone route and email route
+
+// add phone
+router.put('/profile/phone', (req, res) => {
+  User.updateOne({_id: req.user._id}, {$push: {'profile.contactInfo.phone' : req.body.phone}}, err => {
+    res.status(200).send();
+  })
+});
+
+// delete phone
+router.delete('/profile/phone', (req, res) => {
+  User.updateOne({_id: req.user._id}, {$pull: {'profile.contactInfo.phone' : req.body.phone}}, err => {
+    res.status(200).send();
+  })
+});
+
+// add email
+router.put('/profile/email', (req, res) => {
+  User.updateOne({_id: req.user._id}, {$push: {'profile.contactInfo.email' : req.body.email}}, err => {
+    res.status(200).send();
+  })
+});
+
+// delete email
+router.delete('/profile/email', (req, res) => {
+  User.updateOne({_id: req.user._id}, {$pull: {'profile.contactInfo.email' : req.body.email}}, err => {
+    res.status(200).send();
+  })
+});
+
+// update date of birth
+router.put('/profile/birthDate', (req, res) => {
+  User.updateOne({_id: req.user._id}, {'profile.birthDate' : Date.parse(req.body.date)}, err => {
     res.status(200).send();
   })
 });
@@ -414,10 +451,7 @@ router.get('/posts/:postId', (req, res) => {
 });
 
 router.post('/posts', (req, res) => {
-  // console.log(req.body);
-  // res.json('ok')
   if(!req.body.message.trim() || !req.body.imageUrl) return res.status(400).json({msg: 'Incomplete data'});
-
 
   Post.create({
     author: req.user._id,
