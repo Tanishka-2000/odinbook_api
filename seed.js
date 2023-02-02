@@ -4,14 +4,6 @@ const Post = require('./models/post');
 const { faker } = require('@faker-js/faker');
 const bcrypt = require('bcrypt');
 
-// const mongoose = require('mongoose'); 
-// mongoose.set('strictQuery', true);
-// // need url to be pasted here instead of fetching from process.env.MONGODB_URL to work
-// mongoose.connect(process.env.MONGODB_URL,{ useNewUrlParser: true, useUnifiedTopology: true })
-// .then(() => console.log('Mongoose connection started!'))
-// .catch(error => console.log(`mongoose connection interrupted ${error}`));
-
-
 const users = [];
 const posts = [];
 
