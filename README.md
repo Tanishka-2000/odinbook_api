@@ -2,6 +2,11 @@
 A node application that serves REST APIs for the [Odinbook](https://github.com/Tanishka-2000/odinbook) project.
 
 ## Table of Contents
++ [General Info](#general-info)
++ [Technologies](#technologies)
++ [Setup](#setup)
++ [How to Use](#how-to-use)
++ [Features](#features)
 
 ## General Info
 This project is a part of JAMstack architecture. It provides backend service for a facebook-clone project i.e. [Odinbook](https://github.com/Tanishka-2000/odinbook). This project provide APIs for login and signin to the app, using passport module at the users
@@ -48,9 +53,11 @@ to test APIs.
 + Signup routes are accessed on .../api/signup (get) or .../api/signup (post)
 + After login/signup, a token(jwt) is provied in response which needs to be send in the headers object of the request
   as authentication. For example 
-  headers: {
-    Authentication: Bearer <token>
+  {headers: {
+    Authentication: Bearer token
   }
+  }
+  > token need to be replaced by the token string recieved in the response.
 + Rest of the APIs are accessed on .../protected/... route. For example
   - accessing user's friends - .../protected/friends.
 
@@ -60,5 +67,5 @@ to test APIs.
   - Users passwords are encrypted using 'bcrypt' module.
   - For an incomplete request or data, proper error code and message is provided.
 + Only users with authentication token, can access protected routes (/protected).
-> To see the complete list of protected APIs, go to api/protected.js file.
-> To see the models used in this project, go to models folder.
+> + To see the complete list of protected APIs, go to api/protected.js file.
+> + To see the models used in this project, go to models folder.
